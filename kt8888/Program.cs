@@ -1,46 +1,52 @@
 ﻿using System;
-using System.IO;
+using System.Collections.Generic;
 
 namespace kt8888
 {
-    public class BankAccount
+    public class Button
     {
-        private decimal balance;
+        private string text;
+        private EventHandler clickEvent;
+        private List<EventHandler> subscribers = new List<EventHandler>();
 
-        public decimal Balance
+        public string Text
         {
-            get { return balance; }
-            private set
+            get { return text; }
+            set { text = value; }
+        }
+
+        public event EventHandler Click
+        {
+            add
             {
-                balance = value;
-                BalanceChanged?.Invoke(balance);
+                if (subscribers.Count >= 3)
+                {
+                    Console.WriteLine("cannot add more than 3 subscribers");
+                    return;
+                }
+
+                if (subscribers.Contains(value))
+                {
+                    Console.WriteLine("this subscriber is already added");
+                    return;
+                }
+
+                subscribers.Add(value);
+                clickEvent += value;
+                Console.WriteLine("subscriber added successfully");
+            }
+            remove
+            {
+                subscribers.Remove(value);
+                clickEvent -= value;
+                Console.WriteLine("subscriber removed successfully");
             }
         }
 
-        public event Action<decimal> BalanceChanged;
-
-        public void Deposit(decimal amount)
+        public void SimulateClick()
         {
-            Balance += amount;
-        }
-
-        public void Withdraw(decimal amount)
-        {
-            if (amount <= Balance)
-            {
-                Balance -= amount;
-            }
-        }
-    }
-
-    public class Logger
-    {
-        public Logger(BankAccount account)
-        {
-            account.BalanceChanged += (balance) =>
-            {
-                File.AppendAllText("log.txt", $"balance {balance}\n");
-            };
+            Console.WriteLine($"\nbutton '{Text}' clicked");
+            clickEvent?.Invoke(this, EventArgs.Empty);
         }
     }
 
@@ -48,15 +54,56 @@ namespace kt8888
     {
         static void Main()
         {
-            BankAccount account1 = new BankAccount();
-            Logger logger1 = new Logger(account1);
+            Button button1 = new Button();
+            button1.Text = "button";
 
-            account1.Deposit(1000);
-            account1.Withdraw(500);
-            account1.Deposit(300);
+            void PrintText(object sender, EventArgs e)
+            {
+                Console.WriteLine("button text " + ((Button)sender).Text);
+            }
 
-            Console.WriteLine("final balance " + account1.Balance);
-            Console.ReadLine();
+            void ChangeColor(object sender, EventArgs e)
+            {
+                Console.WriteLine("changing button color to red");
+            }
+
+            void ShowMessage(object sender, EventArgs e)
+            {
+                Console.WriteLine("button was clicked");
+            }
+
+            void FourthSubscriber(object sender, EventArgs e)
+            {
+                Console.WriteLine("this is the fourth subscriber not work");
+            }
+
+            // подписка методы
+            Console.WriteLine();
+            button1.Click += PrintText;
+            button1.Click += ChangeColor;
+            button1.Click += ShowMessage;
+
+            // четвертый подписчик
+            Console.WriteLine();
+            button1.Click += FourthSubscriber;
+
+            // существующий подписчик
+            Console.WriteLine();
+            button1.Click += PrintText;
+
+            // нажатие кнопки
+            Console.WriteLine();
+            button1.SimulateClick();
+
+            // удаление и добавление подписчикв
+            Console.WriteLine();
+            button1.Click -= ShowMessage;
+            button1.Click += FourthSubscriber;
+
+            //нажатие кнопки
+            Console.WriteLine();
+            button1.SimulateClick();
+
         }
     }
 }
