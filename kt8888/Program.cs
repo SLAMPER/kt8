@@ -1,46 +1,38 @@
 ﻿using System;
-using System.IO;
 
 namespace kt8888
 {
-    public class BankAccount
+    public class Timer
     {
-        private decimal balance;
+        private System.Timers.Timer _timer;
 
-        public decimal Balance
+        public event EventHandler Tick;
+
+        public Timer()
         {
-            get { return balance; }
-            private set
-            {
-                balance = value;
-                BalanceChanged?.Invoke(balance);
-            }
+            _timer = new System.Timers.Timer(1000);
+            _timer.Elapsed += (s, e) => Tick?.Invoke(this, EventArgs.Empty);
         }
 
-        public event Action<decimal> BalanceChanged;
+        public void Start() => _timer.Start();
+        public void Stop() => _timer.Stop();
+    }
 
-        public void Deposit(decimal amount)
+    public class Clock
+    {
+        public Clock(Timer timer)
         {
-            Balance += amount;
-        }
-
-        public void Withdraw(decimal amount)
-        {
-            if (amount <= Balance)
-            {
-                Balance -= amount;
-            }
+            timer.Tick += (s, e) => Console.WriteLine($"time: {DateTime.Now:T}");
         }
     }
 
-    public class Logger
+    public class Counter
     {
-        public Logger(BankAccount account)
+        private int _count = 0;
+
+        public Counter(Timer timer)
         {
-            account.BalanceChanged += (balance) =>
-            {
-                File.AppendAllText("log.txt", $"balance {balance}\n");
-            };
+            timer.Tick += (s, e) => Console.WriteLine($"count: {++_count}");
         }
     }
 
@@ -48,15 +40,15 @@ namespace kt8888
     {
         static void Main()
         {
-            BankAccount account1 = new BankAccount();
-            Logger logger1 = new Logger(account1);
+            Timer timer1 = new Timer();
+            Clock clock1 = new Clock(timer1);
+            Counter counter1 = new Counter(timer1);
 
-            account1.Deposit(1000);
-            account1.Withdraw(500);
-            account1.Deposit(300);
-
-            Console.WriteLine("final balance " + account1.Balance);
+            timer1.Start();
+            Console.WriteLine("timer started press key for stop");
             Console.ReadLine();
+            timer1.Stop();
+            Console.WriteLine("timer stopped");
         }
     }
 }
